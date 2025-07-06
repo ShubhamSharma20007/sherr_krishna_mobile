@@ -154,15 +154,12 @@ app.post("/api/brands", upload.single("image"), async (req, res) => {
   try {
     const { brandName } = req.body;
 
-
     if (!brandName) {
       return res.status(400).json({ message: "Brand name is required" });
     }
 
-    const existingBrand = await Brand.findOne({
-      brandName: { $regex: new RegExp(`^${brandName}$`, 'i') },
-      isDeleted: false,
-    });
+    // Check if brand already exists (case-insensitive match)
+    const existingBrand = await Brand.findOne({ brandName: { $regex: new RegExp(`^${brandName}$`, 'i') } });
 
     if (existingBrand) {
       return res.status(409).json({ message: "Brand name already exists" });
@@ -194,7 +191,6 @@ app.put("/api/brands/:id", upload.single("image"), async (req, res) => {
     const brandId = req.params.id;
     const { brandName } = req.body;
 
-    console.log(req.body)
     if (!brandName) {
       return res.status(400).json({ message: "Brand name is required" });
     }
@@ -247,14 +243,13 @@ app.put("/api/brands/:id/delete", async (req, res) => {
 //Get All Brands
 app.get("/api/brands", async (req, res) => {
   try {
-    const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
     const {limit} = req.query;
 
     let brands = await Brand.find().limit(parseInt(limit) || 0).lean();
 
     brands = brands.map(brand => ({
       ...brand,
-      image : brand.image ? BASE_URL + brand.image : null
+      image : brand.image || null
     }))
 
     res.json(brands);
@@ -268,6 +263,7 @@ app.get("/api/brands", async (req, res) => {
 app.post("/api/products", upload.array("images", 5), async (req, res) => {
   try {
     const { itemName, brand, model, description } = req.body;
+
     if (!itemName || !description || !model || !brand) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -284,8 +280,7 @@ app.post("/api/products", upload.array("images", 5), async (req, res) => {
       model,
       description,
       images: imageFilenames
-    })
-    newProduct.populate('brand')
+    });
 
     const savedProduct = await newProduct.save();
 
@@ -302,7 +297,6 @@ app.put("/api/products/:id", upload.array("images", 5), async (req, res) => {
   try {
     const { itemName, brand, model, description } = req.body;
     const productId = req.params.id;
-    console.log(req.file,req.files)
 
     if (!itemName || !description || !model || !brand) {
       return res.status(400).json({ message: "All fields are required" });
@@ -330,10 +324,7 @@ app.put("/api/products/:id", upload.array("images", 5), async (req, res) => {
     existingProduct.images = imageFilenames;
     existingProduct.updatedAt = Date.now();
 
-    existingProduct.populate('brand')
-
     const updatedProduct = await existingProduct.save();
-
 
     res.status(200).json({ message: "Product updated successfully!", product: updatedProduct });
 
@@ -370,7 +361,6 @@ app.put("/api/products/:id/delete", async (req, res) => {
 app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
   try {
     const { productId, partName, category, description } = req.body;
-    console.log(req.body)
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -390,8 +380,6 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       images: imageFilenames
     });
 
-    newProductPart.populate('productId')
-
     const savedProductPart = await newProductPart.save();
 
     res.status(201).json({ message: "Product part created successfully!", productPart: savedProductPart });
@@ -401,17 +389,6 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
-
-app.get('/api/productPart', async (req, res) => {
-  try {
-    const productParts = await ProductPart.find().populate('productId');
-    res.json(productParts);
-  }
-  catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-})
 
 //Update product part api
 app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
@@ -443,12 +420,9 @@ app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
     productPart.images = imageFilenames;
     productPart.updatedAt = Date.now();
 
-    productPart.populated('productId')
+    const updatedPart = await productPart.save();
 
-     await productPart.save();
-      const populatedPart = await ProductPart.findById(partId).populate('productId');
-
-    res.status(200).json({ message: "Product part updated successfully!", productPart: populatedPart  });
+    res.status(200).json({ message: "Product part updated successfully!", productPart: updatedPart });
 
   } catch (error) {
     console.error("Error updating product part:", error);
@@ -482,7 +456,6 @@ app.put("/api/productPart/:id/delete", async (req, res) => {
 // Get All products
 app.get("/api/products", async (req, res) => {
   try {
-    const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
     const { limit, brand } = req.query;
 
     const filter = {};
@@ -497,10 +470,10 @@ app.get("/api/products", async (req, res) => {
 
     products = products.map(product => ({
       ...product,
-      images : product.images ? product.images.map(image => BASE_URL + image ) : [],
+      images : product.images || [],
       brand: product.brand ? {
         brandName: product.brand.brandName,
-        image: product.brand.image ? BASE_URL + product.brand.image : null
+        image: product.brand.image || null
       } : null
     }))
 
@@ -514,7 +487,6 @@ app.get("/api/products", async (req, res) => {
 //get product details with product parts with its category
 app.get("/api/products/:id", async (req, res) => {
   try {
-      const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
       const product = await Product.findById(req.params.id)
       .populate({path: 'brand', select: 'brandName image'})
       .lean();
@@ -528,7 +500,7 @@ app.get("/api/products/:id", async (req, res) => {
         product.brand = {
           brandId: product.brand._id,
           brandName: product.brand.brandName,
-          image: product.brand.image ? BASE_URL + product.brand.image : null
+          image: product.brand.image || null
         };
       }
 
@@ -536,7 +508,7 @@ app.get("/api/products/:id", async (req, res) => {
 
       productParts = productParts.map(part => ({
         ...part,
-        images : part.images ? part.images.map(image => BASE_URL + image) : null,
+        images : part.images || null,
       }))
 
       res.json({ 
@@ -551,10 +523,27 @@ app.get("/api/products/:id", async (req, res) => {
   }
 });
 
+//Get all product parts 
+app.get("/api/productParts", async (req, res) => {
+  try {
+      const productParts = await ProductPart.find()
+      .populate({path: 'productId', select: 'itemName'})
+      .lean();
+
+      res.json({ 
+        message: "Product part details get successfully", 
+        productParts, 
+      });
+
+  } catch (error) {
+    console.log(error)
+      res.status(500).json({ error: "Address request failed" });
+  }
+});
+
 //get product part details with product details
 app.get("/api/productPart/:id", async (req, res) => {
   try {
-      const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
       const productPart = await ProductPart.findById(req.params.id).lean();
 
       let productDetails = await Product.find({_id : productPart.productId})
@@ -563,11 +552,11 @@ app.get("/api/productPart/:id", async (req, res) => {
 
       productDetails = productDetails.map(product => ({
         ...product,
-        images : product.images ? product.images.map(image => BASE_URL + image) : [],
+        images : product.images || [],
         brand: product.brand ? {
           brandId: product.brand._id,
           brandName: product.brand.brandName,
-          image: product.brand.image ? BASE_URL + product.brand.image : null
+          image: product.brand.image || null
         } : null
       }))
 
@@ -773,7 +762,6 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
 //Inventory Stock Report
 app.get("/api/stock-report", async (req, res) => {
   try {
-    const BASE_URL = `${req.protocol}://${req.get('host')}/uploads/`;
 
     const stockData = await StockLedger.aggregate([
       { $match: { isDeleted: false } }, 
