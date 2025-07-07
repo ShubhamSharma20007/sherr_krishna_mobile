@@ -530,7 +530,10 @@ app.get("/api/productPart", async (req, res) => {
       .populate({path: 'productId', select: 'itemName'})
       .lean();
 
-      res.json(productParts);
+      res.json({ 
+        message: "Product part details get successfully", 
+        productParts, 
+      });
 
   } catch (error) {
     console.log(error)
