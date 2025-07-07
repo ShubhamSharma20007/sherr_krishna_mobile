@@ -668,6 +668,76 @@ app.put("/api/inventory/:id/delete", async (req, res) => {
   }
 });
 
+//Get inventory
+app.get("/api/inventory", async (req, res) => {
+  try {
+      const inventory = await StockLedger.find({isDeleted:false})
+      .populate({path: 'productId', select: 'itemName'})
+      .populate({path: 'productPartId', select: 'partName'})
+      .lean();
+
+      res.json({ 
+        message: "Inventory details get successfully", 
+        inventory 
+      });
+
+  } catch (error) {
+    console.log(error)
+      res.status(500).json({ error: "Address request failed" });
+  }
+});
+
+//Get Products from Inventory
+app.get("/api/inventory/products", async (req, res) => {
+  try {
+    //unique product ids
+    const productIds = await StockLedger.distinct('productId', { isDeleted: false });
+
+    const products = await Product.find({ _id: { $in: productIds } }, { itemName: 1 });
+
+    res.status(200).json({
+      message: "Products fetched successfully from inventory",
+      products,
+    });
+
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    res.status(500).json({ error: "Failed to fetch products from inventory" });
+  }
+});
+
+//Get productParts from this inventory based on this productId
+app.get("/api/inventory/productParts/:productId", async (req, res) => {
+  try {
+    const { productId } = req.params;
+
+    if (!productId) {
+      return res.status(400).json({ error: "Product ID is required" });
+    }
+
+
+    const partIds = await StockLedger.distinct('productPartId', { 
+      productId, 
+      isDeleted: false 
+    });
+
+    if (partIds.length === 0) {
+      return res.status(404).json({ message: "No parts found for this product in inventory" });
+    }
+
+    const productParts = await ProductPart.find({ _id: { $in: partIds } }, { partName: 1 });
+
+    res.status(200).json({
+      message: "Product Parts fetched successfully",
+      productParts,
+    });
+
+  } catch (error) {
+    console.error("Error fetching product parts:", error);
+    res.status(500).json({ error: "Failed to fetch product parts from inventory" });
+  }
+});
+
 //deduct inventory api
 app.post("/api/inventory/deduct", async (req, res) => {
   try {

@@ -1,8 +1,8 @@
 const mongoose = require("mongoose");
 
 const stockLedgerSchema = new mongoose.Schema({
-  productId: { type: String, required: true },
-  productPartId: { type: String, required: true },
+  productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product' , required: true},
+  productPartId: { type: mongoose.Schema.Types.ObjectId, ref: 'ProductParts', required: true },
   stockType: {type: String,enum: ['In', 'Out'],required: true},
   qty: {type: Number,required: true,min: 1},
   remark: {type: String},
