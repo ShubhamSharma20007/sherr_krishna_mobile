@@ -250,7 +250,7 @@ app.get("/api/brands", async (req, res) => {
     brands = brands.map(brand => ({
       ...brand,
       image : brand.image || null
-    }))
+    })).filter(e=>!e.isDeleted);
 
     res.json(brands);
   } catch (error) {
@@ -380,9 +380,11 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       images: imageFilenames
     });
 
-    const savedProductPart = await newProductPart.save();
+    await newProductPart.save();
+    const populated = await ProductPart.populate(newProductPart, "productId");
 
-    res.status(201).json({ message: "Product part created successfully!", productPart: savedProductPart });
+
+    res.status(201).json({ message: "Product part created successfully!", productPart: populated });
 
   } catch (error) {
     console.error("Error creating product part:", error);
