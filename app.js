@@ -463,7 +463,7 @@ app.get("/api/products", async (req, res) => {
   try {
     const { limit, brand } = req.query;
 
-    const filter = {};
+    const filter = {isDeleted:false};
     if (brand) {
       filter.brand = brand;
     }
@@ -509,7 +509,7 @@ app.get("/api/products/:id", async (req, res) => {
         };
       }
 
-      let productParts = await ProductPart.find({productId : product._id}).lean();
+      let productParts = await ProductPart.find({productId : product._id, isDeleted:false}).lean();
 
       productParts = productParts.map(part => ({
         ...part,
@@ -531,7 +531,7 @@ app.get("/api/products/:id", async (req, res) => {
 //Get all product parts 
 app.get("/api/productPart", async (req, res) => {
   try {
-      const productParts = await ProductPart.find()
+      const productParts = await ProductPart.find({isDeleted:false})
       .populate({path: 'productId', select: 'itemName'})
       .lean();
 
@@ -839,7 +839,6 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
 app.get("/api/stock-report", async (req, res) => {
   try {
 
-    console.log(req.body)
     const stockData = await StockLedger.aggregate([
       { $match: { isDeleted: false } }, 
       {
