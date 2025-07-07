@@ -245,12 +245,15 @@ app.get("/api/brands", async (req, res) => {
   try {
     const {limit} = req.query;
 
-    let brands = await Brand.find().limit(parseInt(limit) || 0).lean();
+    let brands = await Brand.find({
+      isDeleted: false
+    }).limit(parseInt(limit) || 0).lean();
 
     brands = brands.map(brand => ({
       ...brand,
       image : brand.image || null
-    }))
+    }));
+
 
     res.json(brands);
   } catch (error) {
@@ -380,9 +383,11 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       images: imageFilenames
     });
 
-    const savedProductPart = await newProductPart.save();
+    await newProductPart.save();
+    const populated = await ProductPart.populate(newProductPart, "productId");
 
-    res.status(201).json({ message: "Product part created successfully!", productPart: savedProductPart });
+
+    res.status(201).json({ message: "Product part created successfully!", productPart: populated });
 
   } catch (error) {
     console.error("Error creating product part:", error);
@@ -575,7 +580,8 @@ app.get("/api/productPart/:id", async (req, res) => {
 //add inventory api
 app.post("/api/inventory/add", async (req, res) => {
   try {
-    const { items } = req.body;
+    const items = req.body;
+    
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "At least one inventory item is required" });
@@ -833,6 +839,7 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
 app.get("/api/stock-report", async (req, res) => {
   try {
 
+    console.log(req.body)
     const stockData = await StockLedger.aggregate([
       { $match: { isDeleted: false } }, 
       {
