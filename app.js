@@ -524,7 +524,7 @@ app.get("/api/products/:id", async (req, res) => {
 });
 
 //Get all product parts 
-app.get("/api/productParts", async (req, res) => {
+app.get("/api/productPart", async (req, res) => {
   try {
       const productParts = await ProductPart.find()
       .populate({path: 'productId', select: 'itemName'})
