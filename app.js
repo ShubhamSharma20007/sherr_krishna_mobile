@@ -32,8 +32,8 @@ const PORT = process.env.PORT || 8000;
 
 // MongoDB Connection Setup
 mongoose
-.connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-// .connect('mongodb://localhost:27017/inventory_db')
+// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+.connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -287,6 +287,7 @@ app.post("/api/products", upload.array("images", 5), async (req, res) => {
     });
 
     const savedProduct = await newProduct.save();
+    const populateProduct = await savedProduct.populate({path:'brand', select:'brandName'})
 
     res.status(201).json({ message: "Product created successfully!", product: savedProduct });
 
@@ -849,7 +850,7 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
 });
 
 //Inventory Stock Report
-app.get("/api/stock-report", async (req, res) => {
+app.post("/api/stock-report", async (req, res) => {
   try {
 
     const stockData = await StockLedger.aggregate([
@@ -905,6 +906,113 @@ app.get("/api/stock-report", async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 });
+
+// Utility function to group by month
+const groupByMonth = (items, type) => {
+  const result = {};
+  items.forEach(item => {
+    const month = item.createdAt.toLocaleString('default', { month: 'short' });
+    if (!result[month]) result[month] = { month, inventoryIn: 0, inventoryOut: 0 };
+    if (item.stockType === 'In' && type !== 'Out') result[month].inventoryIn += item.qty;
+    if (item.stockType === 'Out' && type !== 'In') result[month].inventoryOut += item.qty;
+  });
+  return Object.values(result);
+}
+app.get('/api/dashboard-data', async (req, res) => {
+  try {
+    const [
+      totalBrands,
+      totalProducts,
+      totalParts,
+      totalUsers,
+      stockEntries,
+      productData
+    ] = await Promise.all([
+      Brand.countDocuments({ isDeleted: false }),
+      Product.countDocuments({ isDeleted: false }),
+      ProductPart.countDocuments({ isDeleted: false }),
+      User.countDocuments(),
+      StockLedger.find({ isDeleted: false }),
+      Product.aggregate([
+        { $match: { isDeleted: false } },
+        {
+          $group: {
+            _id: "$brand",
+            products: { $sum: 1 }
+          }
+        },
+        {
+          $lookup: {
+            from: "brands", // 👈 Your Brand collection name (must match Mongoose model's collection name)
+            localField: "_id",
+            foreignField: "_id",
+            as: "brandDetails"
+          }
+        },
+        { $unwind: "$brandDetails" },
+        {
+          $project: {
+            name: "$brandDetails.brandName",
+            products: 1
+          }
+        }
+      ])
+    ]);
+
+    // 1️⃣ Inventory In/Out by Month
+    const monthMap = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const inventoryGroup = {};
+
+    stockEntries.forEach(entry => {
+      const monthIndex = new Date(entry.createdAt).getMonth();
+      const monthName = monthMap[monthIndex];
+
+      if (!inventoryGroup[monthName]) {
+        inventoryGroup[monthName] = { month: monthName, inventoryIn: 0, inventoryOut: 0 };
+      }
+
+      if (entry.stockType === 'In') {
+        inventoryGroup[monthName].inventoryIn += entry.qty;
+      } else if (entry.stockType === 'Out') {
+        inventoryGroup[monthName].inventoryOut += entry.qty;
+      }
+    });
+
+    const inventoryByMonth = Object.values(inventoryGroup);
+
+    // 2️⃣ Bar Chart: Products per Brand (from Aggregation)
+    const barData = productData.map(item => ({
+      name: item.name,
+      products: item.products
+    }));
+
+    // 3️⃣ Pie Chart: Brand Share (same data reused)
+    const pieData = barData.map(item => ({
+      name: item.name,
+      value: item.products
+    }));
+
+    res.status(200).json({
+      success: true,
+      message: 'Dashboard overview fetched successfully',
+      data: {
+        totalBrands,
+        totalProducts,
+        totalParts,
+        totalUsers,
+        inventoryByMonth,
+        barData,
+        pieData
+      }
+    });
+
+  } catch (error) {
+    console.error('Error fetching dashboard data:', error);
+    res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
+
 
 
 
