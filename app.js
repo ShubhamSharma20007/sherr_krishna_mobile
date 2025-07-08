@@ -777,8 +777,14 @@ app.post("/api/inventory/deduct", async (req, res) => {
         remark
       });
 
-      await stockEntry.save();
-      stockEntries.push(stockEntry);
+      const savedStock = await stockEntry.save();
+
+      const populatedStock = await savedStock
+        .populate([
+          { path: 'productId', select: 'itemName' },
+          { path: 'productPartId', select: 'partName' }
+        ])
+      stockEntries.push(populatedStock);
     }
 
     res.status(200).json({
