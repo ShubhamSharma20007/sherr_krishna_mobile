@@ -33,6 +33,7 @@ const PORT = process.env.PORT || 8000;
 // MongoDB Connection Setup
 mongoose
 .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+// .connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -581,7 +582,6 @@ app.get("/api/productPart/:id", async (req, res) => {
 app.post("/api/inventory/add", async (req, res) => {
   try {
     const items = req.body;
-    
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "At least one inventory item is required" });
@@ -604,8 +604,15 @@ app.post("/api/inventory/add", async (req, res) => {
         remark
       });
 
-      await stockEntry.save();
-      stockEntries.push(stockEntry);
+      const savedStock = await stockEntry.save();
+
+      const populatedStock = await savedStock
+        .populate([
+          { path: 'productId', select: 'itemName' },
+          { path: 'productPartId', select: 'partName' }
+        ])
+
+      stockEntries.push(populatedStock);
     }
 
     res.status(200).json({
