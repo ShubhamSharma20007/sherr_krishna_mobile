@@ -32,8 +32,8 @@ const PORT = process.env.PORT || 8000;
 
 // MongoDB Connection Setup
 mongoose
-// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-.connect('mongodb://localhost:27017/inventory_db')
+.connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+// .connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -605,6 +605,9 @@ app.post("/api/inventory/add", async (req, res) => {
         remark
       });
 
+    await stockEntry.populate('productId productPartId');
+
+
       const savedStock = await stockEntry.save();
 
       const populatedStock = await savedStock
@@ -632,6 +635,7 @@ app.put("/api/inventory/:id", async (req, res) => {
   try {
     const inventoryId = req.params.id;
     const { qty } = req.body;
+    console.log(req.body)
 
     if (qty === undefined || qty === null) {
       return res.status(400).json({ message: "Quantity (qty) is required" });
@@ -740,7 +744,7 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
     }
 
     const productParts = await ProductPart.find({ _id: { $in: partIds } }, { partName: 1 });
-
+    console.log(productParts)
     res.status(200).json({
       message: "Product Parts fetched successfully",
       productParts,
@@ -799,6 +803,12 @@ app.post("/api/inventory/deduct", async (req, res) => {
   }
 });
 
+
+
+
+
+
+
 //calculate stock qty respect to productId productPartId
 app.post("/api/inventory/calculateStock", async (req, res) => {
   try {
@@ -849,7 +859,9 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
   }
 });
 
-//Inventory Stock Report
+
+
+//Inventory Stock Reportapp.post("/api/stock-report", async (req, res) => {
 app.post("/api/stock-report", async (req, res) => {
   try {
 
@@ -1102,4 +1114,4 @@ app.post('/api/reset-password', async (req, res) => {
 
 
 // Start the Server
-app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
