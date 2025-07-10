@@ -1,5 +1,5 @@
 const express = require("express");
-const mongoose = require("mongoose");
+const {mongoose, Types} = require("mongoose");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -808,9 +808,12 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
       return res.status(400).json({ message: "Product and Part are required" });
     }
 
-    const matchCondition = {isDeleted: false};
-    if (productId) matchCondition.productId = productId;
-    if (productPartId) matchCondition.productPartId = productPartId;
+    const matchCondition = { isDeleted: false };
+    if (productId) matchCondition.productId = new Types.ObjectId(productId);
+    if (productPartId) matchCondition.productPartId = new Types.ObjectId(productPartId);
+
+
+    const docs = await StockLedger.find(matchCondition);
 
     const result = await StockLedger.aggregate([
       { $match: matchCondition },
@@ -836,6 +839,7 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
         }
       }
     ]);
+
 
     const stockQuantity = result.length > 0 ? result[0].stockQuantity : 0;
 
@@ -907,17 +911,7 @@ app.post("/api/stock-report", async (req, res) => {
   }
 });
 
-// Utility function to group by month
-const groupByMonth = (items, type) => {
-  const result = {};
-  items.forEach(item => {
-    const month = item.createdAt.toLocaleString('default', { month: 'short' });
-    if (!result[month]) result[month] = { month, inventoryIn: 0, inventoryOut: 0 };
-    if (item.stockType === 'In' && type !== 'Out') result[month].inventoryIn += item.qty;
-    if (item.stockType === 'Out' && type !== 'In') result[month].inventoryOut += item.qty;
-  });
-  return Object.values(result);
-}
+// Dashboard data
 app.get('/api/dashboard-data', async (req, res) => {
   try {
     const [
