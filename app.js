@@ -32,8 +32,8 @@ const PORT = process.env.PORT || 8000;
 
 // MongoDB Connection Setup
 mongoose
-// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-.connect('mongodb://localhost:27017/inventory_db')
+.connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+// .connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
