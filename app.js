@@ -744,7 +744,6 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
     }
 
     const productParts = await ProductPart.find({ _id: { $in: partIds } }, { partName: 1 });
-    console.log(productParts)
     res.status(200).json({
       message: "Product Parts fetched successfully",
       productParts,
@@ -759,7 +758,7 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
 //deduct inventory api
 app.post("/api/inventory/deduct", async (req, res) => {
   try {
-    const { items } = req.body;
+    const items = req.body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       return res.status(400).json({ message: "At least one inventory item is required" });
@@ -1015,6 +1014,62 @@ app.get('/api/dashboard-data', async (req, res) => {
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
     res.status(500).json({ success: false, message: 'Server Error' });
+  }
+});
+
+//Notification api
+app.get('/api/stockAlerts', async (req, res) => {
+  try {
+    const stockData = await StockLedger.aggregate([
+      { $match: { isDeleted: false } },
+      {
+        $group: {
+          _id: { productId: "$productId", productPartId: "$productPartId" },
+          totalIn: {
+            $sum: { $cond: [{ $eq: ["$stockType", "In"] }, "$qty", 0] }
+          },
+          totalOut: {
+            $sum: { $cond: [{ $eq: ["$stockType", "Out"] }, "$qty", 0] }
+          }
+        }
+      },
+      {
+        $project: {
+          productId: "$_id.productId",
+          productPartId: "$_id.productPartId",
+          stockQuantity: { $subtract: ["$totalIn", "$totalOut"] }
+        }
+      },
+      {
+        $match: { stockQuantity: { $lt: 5 } }
+      }
+    ]);
+
+    if (!stockData.length) {
+      return res.status(200).json({ message: 'No low-stock items found', alerts: [] });
+    }
+
+    const alerts = await Promise.all(stockData.map(async (item) => {
+      const product = await Product.findById(item.productId).select('itemName');
+      const part = await ProductPart.findById(item.productPartId).select('partName');
+
+      return {
+        productName: product?.itemName,
+        productPartName: part?.partName,
+        productId: item.productId,
+        productPartId: item.productPartId,
+        stockQuantity: item.stockQuantity || 0
+      };
+    }));
+
+    res.status(200).json({
+      message: 'Stock alerts fetched successfully',
+      alerts
+    });
+
+  } catch (error) {
+    console.error('Error fetching stock alerts:', error);
+    res.status(500).json({ message: 'Server Error' });
   }
 });
 
