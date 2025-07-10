@@ -12,6 +12,7 @@ const ProductPart = require("./models/productParts");
 const User = require("./models/user");
 const StockLedger = require("./models/stcokLedger");
 const Razorpay = require('razorpay')
+const cookieParser = require('cookie-parser');
 
 // Set up storage engine for image uploads
 const storage = multer.diskStorage({
@@ -28,12 +29,13 @@ const upload = multer({
 });
 
 const app = express();
+app.use(cookieParser());
 const PORT = process.env.PORT || 8000;
 
 // MongoDB Connection Setup
 mongoose
-.connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-// .connect('mongodb://localhost:27017/inventory_db')
+// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+.connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -143,7 +145,20 @@ app.post("/api/login", async (req, res) => {
       }
 
       const token = jwt.sign({ id: user.id, email: user.email }, 'process.env.JWT_SECRET', { expiresIn: "1h" });
-      res.json({ message: "Login successful", token, user });
+      res.cookie('token', token, {
+        httpOnly: false,           
+        secure: true,             
+        sameSite: 'strict',       
+        maxAge: 1 * 24 * 60 * 60 * 1000, 
+      });
+    
+      res.cookie('user', JSON.stringify(user), {
+        httpOnly: false,        
+        secure: true,
+        sameSite: 'strict',
+        maxAge: 1 * 24 * 60 * 60 * 1000,
+      });
+      res.json({ message: "Login successful"});
   } catch (error) {
     console.log(error);
       res.status(500).json({ error: "Login failed" });
