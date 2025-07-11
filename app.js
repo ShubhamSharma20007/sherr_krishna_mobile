@@ -11,6 +11,7 @@ const Product = require("./models/product");
 const ProductPart = require("./models/productParts");
 const User = require("./models/user");
 const StockLedger = require("./models/stcokLedger");
+const Contact = require("./models/contact");
 const Razorpay = require('razorpay')
 const cookieParser = require('cookie-parser');
 require('dotenv').config();
@@ -70,40 +71,96 @@ app.use('/uploads', express.static('uploads'));
 
 // Setup Nodemailer Transporter (Use your email service)
 const transporter = nodemailer.createTransport({
-  service: "gmail", // You can replace this with any service (e.g., Outlook, SMTP)
+  service: "gmail",
   auth: {
-    user: "sumitsahumech6@gmail.com", // Your email
-    pass: "xacj smwu fqzg zosf", // Your email password or app-specific password
+    user: "sumitsahumech6@gmail.com",
+    pass: "xacj smwu fqzg zosf",
   },
 });
 
 // POST Route for Contact Form
 app.post("/api/send-email", async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
+    const { name, email, subject, message, contactNo } = req.body;
 
-    if (!name || !email || !subject || !message) {
+    if (!name || !email || !subject || !message || !contactNo) {
       return res.status(400).json({ error: "All fields are required!" });
     }
 
     // Save contact to MongoDB
-    const newContact = new Contact({ name, email, subject, message });
+    const newContact = new Contact({ name, email, subject, message, contactNo });
     await newContact.save();
 
-    // Send Email to YOU (Admin)
+    // Admin Email HTML
+    const adminHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f7f7f7; padding: 20px;">
+          <table width="100%" style="max-width: 600px; margin: auto; background: #fff; border-radius: 8px;">
+            <tr>
+              <td style="background-color: #343a40; padding: 20px; text-align: center;">
+                <h2 style="color: #fff; margin: 0;">New Contact For Appointment</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px;">
+                <p><strong>Name:</strong> ${name}</p>
+                <p><strong>Email:</strong> ${email}</p>
+                <p><strong>Subject:</strong> ${subject}</p>
+                <p><strong>Message:</strong></p>
+                <p style="background-color: #f1f1f1; padding: 10px; border-radius: 4px;">${message}</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px; text-align: center; font-size: 12px; color: #777;">
+                Shree Mobile Repairs
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    // User Thank You Email HTML
+    const userHtml = `
+      <html>
+        <body style="font-family: Arial, sans-serif; background-color: #f9f9f9; padding: 20px;">
+          <table width="100%" style="max-width: 600px; margin: auto; background: #fff; border-radius: 8px;">
+            <tr>
+              <td style="background-color: #9096de; padding: 20px; text-align: center;">
+                <h2 style="color: #fff; margin: 0;">Thank You for Contacting Us!</h2>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px;">
+                <p>Hi <strong>${name}</strong>,</p>
+                <p>Thank you for reaching out to <strong>Shree Mobile Repairs</strong>! We have received your message and will get back to you as soon as possible.</p>
+                <p style="margin-top: 20px;">Best regards,<br>The Shree Mobile Repairs Team</p>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding: 20px; text-align: center; font-size: 12px; color: #777;">
+                Shree Mobile Repairs &copy; 2024
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>
+    `;
+
+    // Admin Email
     const adminMailOptions = {
       from: email,
-      to: "sumitsahumech6@gmail.com", // Your email to receive the message
+      to: 'sumitsahumech6@gmail.com',
       subject: `New Contact Form Submission: ${subject}`,
-      text: `You got a new message from ${name} (${email}):\n\n${message}`,
+      html: adminHtml,
     };
 
-    // Send "Thank You" Email to the User
+    // User Email
     const userMailOptions = {
-      from: "sumitsahumech6@gmail.com",
+      from: 'sumitsahumech6@gmail.com',
       to: email,
-      subject: "Thank You for Contacting Us!",
-      text: `Hi ${name},\n\nThank you for reaching out! We received your message and will get back to you soon.\n\nBest regards,\nYour Company Name`,
+      subject: 'Thank You for Contacting Us!',
+      html: userHtml,
     };
 
     // Send both emails
