@@ -42,18 +42,14 @@ mongoose
 app.use('/uploads', express.static('uploads'));
 
 // CORS Middleware Setup
-app.use(
-  cors({
-    origin: ["http://localhost:3001",
-      'http://localhost:5173',
-      'https://jovial-bublanina-0badd9.netlify.app',
-      "http://shree-mobile-repair.netlify.app"], // Allow requests only from this origin
-    methods: "GET,POST,PUT,DELETE",
-    allowedHeaders: "Content-Type",
-    credentials:true
-  })
-);
+const allowedOrigins = [
+  "http://localhost:3001",
+  "http://localhost:5173",
+  "https://jovial-bublanina-0badd9.netlify.app",
+  "https://shree-mobile-repair.netlify.app"
+];
 
+app.options("*", cors());
 // Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
