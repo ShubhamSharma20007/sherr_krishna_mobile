@@ -44,7 +44,10 @@ app.use('/uploads', express.static('uploads'));
 // CORS Middleware Setup
 app.use(
   cors({
-    origin: ["http://localhost:3001",'http://localhost:5173','https://jovial-bublanina-0badd9.netlify.app',"http://shree-mobile-repair.netlify.app"], // Allow requests only from this origin
+    origin: ["http://localhost:3001",
+      'http://localhost:5173',
+      'https://jovial-bublanina-0badd9.netlify.app',
+      "http://shree-mobile-repair.netlify.app"], // Allow requests only from this origin
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type",
     credentials:true
