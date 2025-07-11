@@ -1000,6 +1000,20 @@ app.post("/api/stock-report", async (req, res) => {
   }
 });
 
+//Contact Report
+app.get("/api/contact-report", async (req, res) => {
+  try {
+
+    const contactData = await Contact.find().lean();
+
+    res.status(200).json(contactData);
+
+  } catch (error) {
+    console.error("Error generating contact report:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 // Dashboard data
 app.get('/api/dashboard-data', async (req, res) => {
   try {
@@ -1014,7 +1028,7 @@ app.get('/api/dashboard-data', async (req, res) => {
       Brand.countDocuments({ isDeleted: false }),
       Product.countDocuments({ isDeleted: false }),
       ProductPart.countDocuments({ isDeleted: false }),
-      User.countDocuments(),
+      Contact.countDocuments(),
       StockLedger.find({ isDeleted: false }),
       Product.aggregate([
         { $match: { isDeleted: false } },
