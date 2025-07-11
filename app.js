@@ -34,8 +34,8 @@ const PORT = process.env.PORT || 8000;
 
 // MongoDB Connection Setup
 mongoose
-// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-.connect('mongodb://localhost:27017/inventory_db')
+.connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
+// .connect('mongodb://localhost:27017/inventory_db')
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
@@ -381,7 +381,7 @@ app.put("/api/products/:id/delete", async (req, res) => {
 // Create Product Part
 app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
   try {
-    const { productId, partName, category, description } = req.body;
+    const { productId, partName, category, description ,expDate } = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -398,7 +398,8 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       partName,
       description,
       category,
-      images: imageFilenames
+      images: imageFilenames,                     
+      expDate: expDate ?? ''
     });
 
     await newProductPart.save();
@@ -417,7 +418,7 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
 app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
   try {
     const partId = req.params.id;
-    const { productId, partName, category, description } = req.body;
+    const { productId, partName, category, description ,expDate} = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -442,6 +443,7 @@ app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
     productPart.description = description;
     productPart.images = imageFilenames;
     productPart.updatedAt = Date.now();
+    productPart.expDate = expDate ?? '';
 
     const updatedPart = await productPart.save();
 
@@ -479,11 +481,14 @@ app.put("/api/productPart/:id/delete", async (req, res) => {
 // Get All products
 app.get("/api/products", async (req, res) => {
   try {
-    const { limit, brand } = req.query;
+    const { limit, brand ,itemName} = req.query;
 
     const filter = {isDeleted:false};
     if (brand) {
       filter.brand = brand;
+    }
+    if(itemName){
+      filter.itemName = { $regex: itemName, $options: 'i' };
     }
 
     let products = await Product.find(filter)
