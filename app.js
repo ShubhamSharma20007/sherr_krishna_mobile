@@ -44,7 +44,7 @@ app.use('/uploads', express.static('uploads'));
 // CORS Middleware Setup
 app.use(
   cors({
-    origin: ["http://localhost:3001",'http://localhost:5173','https://jovial-bublanina-0badd9.netlify.app'], // Allow requests only from this origin
+    origin: ["http://localhost:3001",'http://localhost:5173','https://jovial-bublanina-0badd9.netlify.app',"*"], // Allow requests only from this origin
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type",
     credentials:true
@@ -148,9 +148,9 @@ app.post("/api/login", async (req, res) => {
       const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
       res.cookie('token', token, {
         httpOnly: false,           
-        secure: true,             
-        sameSite: 'strict',       
-        maxAge: 1 * 24 * 60 * 60 * 1000, 
+        secure: true,              
+        sameSite: 'None',          
+        maxAge: 7 *24 * 60 * 60 * 1000,
       });
     
       res.cookie('user', JSON.stringify(user), {
