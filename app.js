@@ -40,13 +40,11 @@ mongoose
 .then(() => console.log("✅ Connected to MongoDB"))
 .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-app.use('/uploads', express.static('uploads'));
-
 const allowedOrigins = [
   "http://localhost:3001",
   "http://localhost:5173",
   "https://jovial-bublanina-0badd9.netlify.app",
-  "https://shree-mobile-repair.netlify.app" // ✅ Must be https
+  "https://shree-mobile-repair.netlify.app"
 ];
 
 const corsOptions = {
@@ -59,17 +57,15 @@ const corsOptions = {
   },
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type"]
+  allowedHeaders: ["Content-Type"],
 };
 
+app.use(cors(corsOptions)); // ✅ MUST be before everything
+app.options("*", cors(corsOptions)); 
 
-app.use(cors(corsOptions));
-
-app.options("*", cors(corsOptions));
-
-// Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/uploads', express.static('uploads'));
 
 
 // Setup Nodemailer Transporter (Use your email service)
