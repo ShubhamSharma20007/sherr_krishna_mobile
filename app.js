@@ -152,14 +152,8 @@ app.post("/api/login", async (req, res) => {
         sameSite: 'None',          
         maxAge: 7 *24 * 60 * 60 * 1000,
       });
-    
-      res.cookie('user', JSON.stringify(user), {
-        httpOnly: false,        
-        secure: true,
-        sameSite: 'strict',
-        maxAge: 1 * 24 * 60 * 60 * 1000,
-      });
-      res.json({ message: "Login successful"});
+  
+      res.json({ message: "Login successful",token});
   } catch (error) {
     console.log(error);
       res.status(500).json({ error: "Login failed" });
