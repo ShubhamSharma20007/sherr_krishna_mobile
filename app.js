@@ -13,6 +13,7 @@ const User = require("./models/user");
 const StockLedger = require("./models/stcokLedger");
 const Razorpay = require('razorpay')
 const cookieParser = require('cookie-parser');
+require('dotenv').config();
 
 // Set up storage engine for image uploads
 const storage = multer.diskStorage({
@@ -21,7 +22,6 @@ const storage = multer.diskStorage({
     cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '')}`);
   },
 });
-
 
 const upload = multer({
   storage,
@@ -47,6 +47,7 @@ app.use(
     origin: ["http://localhost:3001",'http://localhost:5173','https://jovial-bublanina-0badd9.netlify.app'], // Allow requests only from this origin
     methods: "GET,POST,PUT,DELETE",
     allowedHeaders: "Content-Type",
+    credentials:true
   })
 );
 
@@ -136,15 +137,15 @@ app.post("/api/login", async (req, res) => {
   try {
       const user = await User.findOne({ email });
       if (!user) {
-          return res.status(401).json({ error: "Please enter a valid email address" });
+          return res.status(401).json({ message: "Please enter a valid email address" });
       }
 
       const passwordMatch = await bcrypt.compare(password, user.password);
       if (!passwordMatch) {
-          return res.status(401).json({ error: "please enter a valid password" });
+          return res.status(401).json({ message: "please enter a valid password" });
       }
 
-      const token = jwt.sign({ id: user.id, email: user.email }, 'process.env.JWT_SECRET', { expiresIn: "1h" });
+      const token = jwt.sign({ id: user.id, email: user.email }, process.env.JWT_SECRET, { expiresIn: "1h" });
       res.cookie('token', token, {
         httpOnly: false,           
         secure: true,             
@@ -817,12 +818,6 @@ app.post("/api/inventory/deduct", async (req, res) => {
   }
 });
 
-
-
-
-
-
-
 //calculate stock qty respect to productId productPartId
 app.post("/api/inventory/calculateStock", async (req, res) => {
   try {
@@ -879,7 +874,7 @@ app.post("/api/inventory/calculateStock", async (req, res) => {
 
 
 
-//Inventory Stock Reportapp.post("/api/stock-report", async (req, res) => {
+//Inventory Stock Report
 app.post("/api/stock-report", async (req, res) => {
   try {
 
