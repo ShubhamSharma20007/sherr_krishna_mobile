@@ -41,15 +41,31 @@ mongoose
 
 app.use('/uploads', express.static('uploads'));
 
-// CORS Middleware Setup
 const allowedOrigins = [
   "http://localhost:3001",
   "http://localhost:5173",
   "https://jovial-bublanina-0badd9.netlify.app",
-  "https://shree-mobile-repair.netlify.app"
+  "https://shree-mobile-repair.netlify.app" // ✅ Must be https
 ];
 
-app.options("*", cors());
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"]
+};
+
+
+app.use(cors(corsOptions));
+
+app.options("*", cors(corsOptions));
+
 // Body Parser Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
