@@ -30,6 +30,34 @@ const upload = multer({
 });
 
 const app = express();
+
+app.use(cors({
+  origin: true,           
+  credentials: true,    
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+}));
+
+
+app.options("*", cors());
+
+app.all('*', function(req, res, next) {
+       res.header("Access-Control-Allow-Origin", "*");
+       res.header("Access-Control-Allow-Headers", "X-Requested-With");
+       res.header('Access-Control-Allow-Headers', 'Content-Type');
+       next();
+});
+
+app.use(cors());
+
+app.use(function(req, res, next) {
+   res.header("Access-Control-Allow-Origin", "*");
+   res.header('Access-Control-Allow-Methods', 'DELETE, PUT, GET, POST');
+   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
+   next();
+});
+
+
 app.use(cookieParser());
 const PORT = process.env.PORT || 8000;
 
@@ -48,28 +76,7 @@ const allowedOrigins = [
   "https://shree-mobile-repair.netlify.app"
 ];
 
-const corsOptions = {
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error("Not allowed by CORS"));
-    }
-  },
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type"],
-};
 
-app.use(cors({
-  origin: true,           
-  credentials: true,    
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-}));
-
-
-app.options("*", cors());
 
 // app.use(cors(corsOptions)); // ✅ MUST be before everything
 // app.options("*", cors(corsOptions)); 
@@ -77,6 +84,11 @@ app.options("*", cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static('uploads'));
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ error: 'Something broke!' });
+});
 
 
 // Setup Nodemailer Transporter (Use your email service)
@@ -86,6 +98,9 @@ const transporter = nodemailer.createTransport({
     user: "sumitsahumech6@gmail.com",
     pass: "xacj smwu fqzg zosf",
   },
+});
+app.get('/api/ping', (req, res) => {
+  res.status(200).send('index #app.js');
 });
 
 // POST Route for Contact Form
