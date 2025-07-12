@@ -61,8 +61,18 @@ const corsOptions = {
   allowedHeaders: ["Content-Type"],
 };
 
-app.use(cors(corsOptions)); // ✅ MUST be before everything
-app.options("*", cors(corsOptions)); 
+app.use(cors({
+  origin: true,           
+  credentials: true,    
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+}));
+
+
+app.options("*", cors());
+
+// app.use(cors(corsOptions)); // ✅ MUST be before everything
+// app.options("*", cors(corsOptions)); 
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
