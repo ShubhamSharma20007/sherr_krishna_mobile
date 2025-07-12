@@ -1184,7 +1184,7 @@ app.get('/api/stockAlerts', async (req, res) => {
 
 let otpStore = {};
 // Forgot Password - Send OTP
-app.post('/api/forgot-password', async (req, res) => {
+app.post('/api/send-otp', async (req, res) => {
   const { email } = req.body;
   try {
       const user = await User.findOne({ email });
@@ -1236,24 +1236,24 @@ app.post('/api/verify-otp', async(req, res) => {
   }
 
   // Generate OTP token
-  const otpToken = jwt.sign({ email }, 'process.env.JWT_SECRET', { expiresIn: '1h' });
+  // const otpToken = jwt.sign({ email }, 'process.env.JWT_SECRET', { expiresIn: '1h' });
 
   // Clear OTP
   user.otp = null;
   await user.save();
 
-  res.status(200).json({ message: "OTP verified successfully", otpToken });
+  res.status(200).json({ message: "OTP verified successfully"});
 });
 
 // Reset Password
 app.post('/api/reset-password', async (req, res) => {
-  const { newPassword, otpToken} = req.body;
+  const { newPassword, email} = req.body;
   try {
-      const decoded = jwt.verify(otpToken, 'process.env.JWT_SECRET');
+      // const decoded = jwt.verify(otpToken, 'process.env.JWT_SECRET');
       const hashedPassword = await bcrypt.hash(newPassword, 10);
       
       const user = await User.findOneAndUpdate(
-        { email: decoded.email },
+        { email },
         { password: hashedPassword },
         { new: true }
       );
