@@ -100,6 +100,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 app.get('/api/ping', (req, res) => {
+  console.log(`🔁 Ping received at ${new Date().toISOString()}`);
   res.status(200).send('index #app.js');
 });
 
