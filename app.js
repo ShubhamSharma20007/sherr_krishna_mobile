@@ -1,5 +1,5 @@
 const express = require("express");
-const {mongoose, Types} = require("mongoose");
+const mongoose = require("mongoose");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
@@ -12,84 +12,71 @@ const ProductPart = require("./models/productParts");
 const User = require("./models/user");
 const StockLedger = require("./models/stcokLedger");
 const Contact = require("./models/contact");
-const Razorpay = require('razorpay')
-const cookieParser = require('cookie-parser');
-require('dotenv').config();
-
-// Set up storage engine for image uploads
-const storage = multer.diskStorage({
-  destination: "./uploads/",
-  filename: (req, file, cb) => {
-    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, '')}`);
-  },
-});
-
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit
-});
+const Razorpay = require("razorpay");
+const cookieParser = require("cookie-parser");
+require("dotenv").config();
 
 const app = express();
 
-app.use(cors({
-  origin: true,           
-  credentials: true,    
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-}));
-
-
-app.options("*", cors());
-
-app.all('*', function(req, res, next) {
-       res.header("Access-Control-Allow-Origin", "*");
-       res.header("Access-Control-Allow-Headers", "X-Requested-With");
-       res.header('Access-Control-Allow-Headers', 'Content-Type');
-       next();
-});
-
-app.use(cors());
-
-app.use(function(req, res, next) {
-   res.header("Access-Control-Allow-Origin", "*");
-   res.header('Access-Control-Allow-Methods', 'DELETE, PUT, GET, POST');
-   res.header("Access-Control-Allow-Headers", "Origin, X-Requested-With, Content-Type, Accept");
-   next();
-});
-
-
-app.use(cookieParser());
-const PORT = process.env.PORT || 8000;
-
-// MongoDB Connection Setup
-mongoose
-// .connect("mongodb+srv://root:Shubu%40123@testing.rdqvgba.mongodb.net/inventory_db")
-.connect('mongodb+srv://keshav_toshniwal:Toshniwal%40121@cluster0.tepxui3.mongodb.net/inventory_db') // shree mobile 
-// .connect('mongodb://localhost:27017/inventory_db')
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch((err) => console.error("❌ MongoDB connection error:", err));
 
 const allowedOrigins = [
-  "http://localhost:3001",
   "http://localhost:5173",
+  "http://localhost:3001",
   "https://jovial-bublanina-0badd9.netlify.app",
   "https://shree-mobile-repair.netlify.app"
 ];
 
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("Not allowed by CORS"));
+    }
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+};
 
 
-// app.use(cors(corsOptions)); // ✅ MUST be before everything
-// app.options("*", cors(corsOptions)); 
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions)); // preflight
 
+
+app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
+
+const storage = multer.diskStorage({
+  destination: "./uploads/",
+  filename: (req, file, cb) => {
+    cb(null, `${Date.now()}-${file.originalname.replace(/\s+/g, "")}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+mongoose
+  .connect(
+    "mongodb+srv://keshav_toshniwal:Toshniwal%40121@cluster0.tepxui3.mongodb.net/inventory_db"
+  )
+  .then(() => console.log("✅ Connected to MongoDB"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+
+app.get("/api/ping", (req, res) => {
+  res.send("pong 🏓");
+});
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: 'Something broke!' });
+  res.status(500).json({ error: "Something broke!" });
 });
-
 
 // Setup Nodemailer Transporter (Use your email service)
 const transporter = nodemailer.createTransport({
@@ -1281,4 +1268,5 @@ app.post('/api/reset-password', async (req, res) => {
 
 
 // Start the Server
+const PORT = process.env.PORT || 8000;
 app.listen(PORT, () => console.log(`🚀 Server running on http://localhost:${PORT}`))
