@@ -646,33 +646,88 @@ app.get("/api/productPart", async (req, res) => {
 });
 
 //get product part details with product details
+// app.get("/api/productPart/:id", async (req, res) => {
+//   try {
+//       const productPart = await ProductPart.findById(req.params.id).lean();
+
+//       let productDetails = await Product.find({_id : productPart.productId})
+//       .populate({path: 'brand', select: 'brandName image'})
+//       .lean();
+
+//       productDetails = productDetails.map(product => ({
+//         ...product,
+//         images : product.images || [],
+//         brand: product.brand ? {
+//           brandId: product.brand._id,
+//           brandName: product.brand.brandName,
+//           image: product.brand.image || null
+//         } : null
+//       }))
+
+//       res.json({ 
+//         message: "Product part details get successfully", 
+//         productPart, 
+//         productDetails 
+//       });
+
+//   } catch (error) {
+//     console.log(error)
+//       res.status(500).json({ error: "Address request failed" });
+//   }
+// });
+
 app.get("/api/productPart/:id", async (req, res) => {
   try {
-      const productPart = await ProductPart.findById(req.params.id).lean();
+    const productPart = await ProductPart.findById(req.params.id).lean();
+    if (!productPart) {
+      return res.status(404).json({ error: "Product part not found" });
+    }
 
-      let productDetails = await Product.find({_id : productPart.productId})
-      .populate({path: 'brand', select: 'brandName image'})
+    let productDetails = await Product.find({ _id: productPart.productId })
+      .populate({ path: 'brand', select: 'brandName image' })
       .lean();
 
-      productDetails = productDetails.map(product => ({
-        ...product,
-        images : product.images || [],
-        brand: product.brand ? {
-          brandId: product.brand._id,
-          brandName: product.brand.brandName,
-          image: product.brand.image || null
-        } : null
-      }))
+    productDetails = productDetails.map(product => ({
+      ...product,
+      images: product.images || [],
+      brand: product.brand ? {
+        brandId: product.brand._id,
+        brandName: product.brand.brandName,
+        image: product.brand.image || null
+      } : null
+    }));
 
-      res.json({ 
-        message: "Product part details get successfully", 
-        productPart, 
-        productDetails 
-      });
+    // ✅ Calculate availableQty from StockLedger
+    const stockLedger = await StockLedger.find({
+      productId: productPart.productId,
+      productPartId: productPart._id
+    }).lean();
+
+    let totalIn = 0;
+    let totalOut = 0;
+
+    for (const entry of stockLedger) {
+      if (entry.stockType === 'In') {
+        totalIn += entry.qty;
+      } else if (entry.stockType === 'Out') {
+        totalOut += entry.qty;
+      }
+    }
+
+    const availableQty = totalIn - totalOut;
+
+    // ✅ Add availableQty into productPart
+    productPart.availableQty = availableQty;
+
+    res.json({ 
+      message: "Product part details fetched successfully", 
+      productPart, 
+      productDetails 
+    });
 
   } catch (error) {
-    console.log(error)
-      res.status(500).json({ error: "Address request failed" });
+    console.error(error);
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
