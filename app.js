@@ -1,5 +1,5 @@
 const express = require("express");
-const mongoose = require("mongoose");
+const {mongoose,Types} = require("mongoose");
 const cors = require("cors");
 const nodemailer = require("nodemailer");
 const bcrypt = require("bcryptjs");
