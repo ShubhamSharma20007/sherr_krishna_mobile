@@ -1178,8 +1178,64 @@ app.get('/api/dashboard-data', async (req, res) => {
 });
 
 //Notification api
+// app.get('/api/stockAlerts', async (req, res) => {
+//   try {
+//     const stockData = await StockLedger.aggregate([
+//       { $match: { isDeleted: false } },
+//       {
+//         $group: {
+//           _id: { productId: "$productId", productPartId: "$productPartId" },
+//           totalIn: {
+//             $sum: { $cond: [{ $eq: ["$stockType", "In"] }, "$qty", 0] }
+//           },
+//           totalOut: {
+//             $sum: { $cond: [{ $eq: ["$stockType", "Out"] }, "$qty", 0] }
+//           }
+//         }
+//       },
+//       {
+//         $project: {
+//           productId: "$_id.productId",
+//           productPartId: "$_id.productPartId",
+//           stockQuantity: { $subtract: ["$totalIn", "$totalOut"] }
+//         }
+//       },
+//       {
+//         $match: { stockQuantity: { $lt: 5 } }
+//       }
+//     ]);
+
+//     if (!stockData.length) {
+//       return res.status(200).json({ message: 'No low-stock items found', alerts: [] });
+//     }
+
+//     const alerts = await Promise.all(stockData.map(async (item) => {
+//       const product = await Product.findById(item.productId).select('itemName');
+//       const part = await ProductPart.findById(item.productPartId).select('partName');
+
+//       return {
+//         productName: product?.itemName,
+//         productPartName: part?.partName,
+//         productId: item.productId,
+//         productPartId: item.productPartId,
+//         stockQuantity: item.stockQuantity || 0
+//       };
+//     }));
+
+//     res.status(200).json({
+//       message: 'Stock alerts fetched successfully',
+//       alerts
+//     });
+
+//   } catch (error) {
+//     console.error('Error fetching stock alerts:', error);
+//     res.status(500).json({ message: 'Server Error' });
+//   }
+// });
+
 app.get('/api/stockAlerts', async (req, res) => {
   try {
+    // Low stock alerts
     const stockData = await StockLedger.aggregate([
       { $match: { isDeleted: false } },
       {
@@ -1205,11 +1261,8 @@ app.get('/api/stockAlerts', async (req, res) => {
       }
     ]);
 
-    if (!stockData.length) {
-      return res.status(200).json({ message: 'No low-stock items found', alerts: [] });
-    }
-
-    const alerts = await Promise.all(stockData.map(async (item) => {
+    // Fetch product and part info for low stock
+    const stockAlerts = await Promise.all(stockData.map(async (item) => {
       const product = await Product.findById(item.productId).select('itemName');
       const part = await ProductPart.findById(item.productPartId).select('partName');
 
@@ -1222,6 +1275,60 @@ app.get('/api/stockAlerts', async (req, res) => {
       };
     }));
 
+    // Battery expiry alerts (expiring within 1 month)
+    const oneMonthFromNow = new Date();
+    oneMonthFromNow.setMonth(oneMonthFromNow.getMonth() + 1);
+
+    const expiringBatteries = await ProductPart.find({
+      category: "Battery",
+      expDate: { $lte: oneMonthFromNow }
+    }).lean();
+
+    const batteryAlerts = await Promise.all(expiringBatteries.map(async (part) => {
+      const product = await Product.findById(part.productId).select("itemName");
+
+      // Stock quantity for this battery
+      const stockSummary = await StockLedger.aggregate([
+        {
+          $match: {
+            isDeleted: false,
+            productId: part.productId,
+            productPartId: part._id
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            totalIn: {
+              $sum: { $cond: [{ $eq: ["$stockType", "In"] }, "$qty", 0] }
+            },
+            totalOut: {
+              $sum: { $cond: [{ $eq: ["$stockType", "Out"] }, "$qty", 0] }
+            }
+          }
+        },
+        {
+          $project: {
+            stockQuantity: { $subtract: ["$totalIn", "$totalOut"] }
+          }
+        }
+      ]);
+
+      const stockQty = stockSummary[0]?.stockQuantity || 0;
+
+      return {
+        productName: product?.itemName,
+        productPartName: part?.partName,
+        productId: part.productId,
+        productPartId: part._id,
+        expDate: part.expDate,
+        stockQuantity: stockQty
+      };
+    }));
+
+    // Combine both alerts into a single array (no 'type' field)
+    const alerts = [...stockAlerts, ...batteryAlerts];
+
     res.status(200).json({
       message: 'Stock alerts fetched successfully',
       alerts
@@ -1232,6 +1339,7 @@ app.get('/api/stockAlerts', async (req, res) => {
     res.status(500).json({ message: 'Server Error' });
   }
 });
+
 
 
 
