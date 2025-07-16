@@ -1049,7 +1049,7 @@ app.post("/api/stock-report", async (req, res) => {
       { $match: { isDeleted: false } }, 
       {
         $group: {
-          _id: { productId: "$productId", productPartId: "$productPartId" },
+          _id: { productId: "$productId", productPartId: "$productPartId", expDate: "$expDate" },
           totalIn: {
             $sum: { $cond: [{ $eq: ["$stockType", "In"] }, "$qty", 0] }
           },
@@ -1063,6 +1063,7 @@ app.post("/api/stock-report", async (req, res) => {
           _id: 0,
           productId: "$_id.productId",
           productPartId: "$_id.productPartId",
+          expDate: "$_id.expDate",
           stockQty: { $subtract: ["$totalIn", "$totalOut"] }
         }
       }
@@ -1087,6 +1088,7 @@ app.post("/api/stock-report", async (req, res) => {
       finalReport.push({
         productName: productName,
         productPartName: productPartName,
+        expDate: item.expDate,
         stockQty: item.stockQty
       });
     }
