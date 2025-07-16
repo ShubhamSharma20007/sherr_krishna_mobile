@@ -906,7 +906,7 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
 });
 
 //Get Exp Date based on product and product part
-app.get("/api/inventory/getExpDates", async (req, res) => {
+app.post("/api/inventory/getExpDates", async (req, res) => {
   try {
     const { productId, productPartId } = req.body;
 
