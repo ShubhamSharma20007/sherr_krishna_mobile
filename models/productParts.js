@@ -6,7 +6,6 @@ const productPartsSchema = new mongoose.Schema({
   category: { type: String, required: true },
   description: { type: String, required: true },
   images : [{ type: String}],
-  expDate:{type:Date},
   isDeleted: { type: Boolean, default: false },
   deletedOn: { type: Date },
   createdAt: { type: Date, default: Date.now },

@@ -457,7 +457,7 @@ app.put("/api/products/:id/delete", async (req, res) => {
 // Create Product Part
 app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
   try {
-    const { productId, partName, category, description ,expDate } = req.body;
+    const { productId, partName, category, description } = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -475,7 +475,6 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       description,
       category,
       images: imageFilenames,                     
-      expDate: expDate ?? ''
     });
 
     await newProductPart.save();
@@ -494,7 +493,7 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
 app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
   try {
     const partId = req.params.id;
-    const { productId, partName, category, description ,expDate} = req.body;
+    const { productId, partName, category, description} = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -519,7 +518,6 @@ app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
     productPart.description = description;
     productPart.images = imageFilenames;
     productPart.updatedAt = Date.now();
-    productPart.expDate = expDate ?? '';
 
     const updatedPart = await productPart.save();
 
