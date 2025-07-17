@@ -66,7 +66,7 @@ mongoose
     "mongodb+srv://keshav_toshniwal:Toshniwal%40121@cluster0.tepxui3.mongodb.net/inventory_db"
   )
   .then(() => console.log("✅ Connected to MongoDB"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
+  .catch((err) => console.error("❌ MongoDB connection message:", err));
 
 
 app.get("/api/ping", (req, res) => {
@@ -75,7 +75,7 @@ app.get("/api/ping", (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ error: "Something broke!" });
+  res.status(500).json({ message: "Something broke!" });
 });
 
 // Setup Nodemailer Transporter (Use your email service)
@@ -97,7 +97,7 @@ app.post("/api/send-email", async (req, res) => {
     const { name, email, subject, message, contactNo } = req.body;
 
     if (!name || !email || !subject || !message || !contactNo) {
-      return res.status(400).json({ error: "All fields are required!" });
+      return res.status(400).json({ message: "All fields are required!" });
     }
 
     // Save contact to MongoDB
@@ -183,7 +183,7 @@ app.post("/api/send-email", async (req, res) => {
     res.status(201).json({ message: "Message sent successfully!" });
   } catch (err) {
     console.error("Error sending email:", err);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -194,7 +194,7 @@ app.post("/api/register", async (req, res) => {
   try {
       const existingUser = await User.findOne({ email });
       if (existingUser) {
-          return res.status(400).json({ error: "Email already exists" });
+          return res.status(400).json({ message: "Email already exists" });
       }
 
       const hashedPassword = await bcrypt.hash(password, 10);
@@ -208,7 +208,7 @@ app.post("/api/register", async (req, res) => {
 
       res.json({ message: "User registered successfully", user: newUser });
   } catch (error) {
-      res.status(500).json({ error: "Registration failed" });
+      res.status(500).json({ message: "Registration failed" });
   }
 });
 
@@ -238,7 +238,7 @@ app.post("/api/login", async (req, res) => {
       res.json({ message: "Login successful",token});
   } catch (error) {
     console.log(error);
-      res.status(500).json({ error: "Login failed" });
+      res.status(500).json({ message: "Login failed" });
   }
 });
 
@@ -621,7 +621,7 @@ app.get("/api/products/:id", async (req, res) => {
 
   } catch (error) {
     console.log(error)
-      res.status(500).json({ error: "Address request failed" });
+      res.status(500).json({ message: "Address request failed" });
   }
 });
 
@@ -639,7 +639,7 @@ app.get("/api/productPart", async (req, res) => {
 
   } catch (error) {
     console.log(error)
-      res.status(500).json({ error: "Address request failed" });
+      res.status(500).json({ message: "Address request failed" });
   }
 });
 
@@ -670,7 +670,7 @@ app.get("/api/productPart", async (req, res) => {
 
 //   } catch (error) {
 //     console.log(error)
-//       res.status(500).json({ error: "Address request failed" });
+//       res.status(500).json({ message: "Address request failed" });
 //   }
 // });
 
@@ -678,7 +678,7 @@ app.get("/api/productPart/:id", async (req, res) => {
   try {
     const productPart = await ProductPart.findById(req.params.id).lean();
     if (!productPart) {
-      return res.status(404).json({ error: "Product part not found" });
+      return res.status(404).json({ message: "Product part not found" });
     }
 
     let productDetails = await Product.find({ _id: productPart.productId })
@@ -725,7 +725,7 @@ app.get("/api/productPart/:id", async (req, res) => {
 
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
 
@@ -851,7 +851,7 @@ app.get("/api/inventory", async (req, res) => {
 
   } catch (error) {
     console.log(error)
-      res.status(500).json({ error: "Address request failed" });
+      res.status(500).json({ message: "Address request failed" });
   }
 });
 
@@ -870,7 +870,7 @@ app.get("/api/inventory/products", async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching products:", error);
-    res.status(500).json({ error: "Failed to fetch products from inventory" });
+    res.status(500).json({ message: "Failed to fetch products from inventory" });
   }
 });
 
@@ -880,7 +880,7 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
     const { productId } = req.params;
 
     if (!productId) {
-      return res.status(400).json({ error: "Product ID is required" });
+      return res.status(400).json({ message: "Product ID is required" });
     }
 
 
@@ -901,7 +901,7 @@ app.get("/api/inventory/productParts/:productId", async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching product parts:", error);
-    res.status(500).json({ error: "Failed to fetch product parts from inventory" });
+    res.status(500).json({ message: "Failed to fetch product parts from inventory" });
   }
 });
 
@@ -911,7 +911,7 @@ app.post("/api/inventory/getExpDates", async (req, res) => {
     const { productId, productPartId } = req.body;
 
     if (!(productId && productPartId)) {
-      return res.status(400).json({ error: "Product and product part is required" });
+      return res.status(400).json({ message: "Product and product part is required" });
     }
 
 
@@ -932,7 +932,7 @@ app.post("/api/inventory/getExpDates", async (req, res) => {
 
   } catch (error) {
     console.error("Error fetching exp dates:", error);
-    res.status(500).json({ error: "Failed to fetch exp dates from inventory" });
+    res.status(500).json({ message: "Failed to fetch exp dates from inventory" });
   }
 });
 
@@ -1353,7 +1353,7 @@ app.post('/api/send-otp', async (req, res) => {
   const { email } = req.body;
   try {
       const user = await User.findOne({ email });
-      if (!user) return res.status(404).json({ error: "User not found" });
+      if (!user) return res.status(404).json({ message: "User not found" });
 
       const otp = Math.floor(100000 + Math.random() * 900000).toString();
       
@@ -1377,7 +1377,7 @@ app.post('/api/send-otp', async (req, res) => {
       res.status(200).json({ message: "OTP sent to your email" });
   } catch (error) {
       console.log(error)
-      res.status(500).json({ error: "Internal Server Error" });
+      res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
@@ -1423,11 +1423,11 @@ app.post('/api/reset-password', async (req, res) => {
         { new: true }
       );
 
-    if (!user) return res.status(404).json({ error: "User not found" });
+    if (!user) return res.status(404).json({ message: "User not found" });
     res.status(200).json({ message: "Password reset successful" });
   } catch (error) {
       console.log(error)
-      res.status(400).json({ error: "Invalid token or token expired" });
+      res.status(400).json({ message: "Invalid token or token expired" });
   }
 });
 
