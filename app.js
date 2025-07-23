@@ -457,10 +457,15 @@ app.put("/api/products/:id/delete", async (req, res) => {
 // Create Product Part
 app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
   try {
-    const { productId, partName, category, description } = req.body;
+    const { productId, partName, category, description, compatibleWith } = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
+    }
+
+    const isExistPartName = await ProductPart.findOne({productId, partName, category})
+    if(isExistPartName){
+      return res.status(400).json({ message: "Part Name is already exist in this Product" });
     }
 
     let imageFilenames = [];
@@ -474,6 +479,7 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
       partName,
       description,
       category,
+      compatibleWith: compatibleWith ? compatibleWith : [],
       images: imageFilenames,                     
     });
 
@@ -493,7 +499,7 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
 app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
   try {
     const partId = req.params.id;
-    const { productId, partName, category, description} = req.body;
+    const { productId, partName, category, description, compatibleWith} = req.body;
 
     if (!productId || !partName || !category || !description) {
       return res.status(400).json({ message: "All fields are required" });
@@ -515,6 +521,7 @@ app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
     productPart.productId = productId;
     productPart.partName = partName;
     productPart.category = category;
+    productPart.compatibleWith = compatibleWith ? compatibleWith : [];
     productPart.description = description;
     productPart.images = imageFilenames;
     productPart.updatedAt = Date.now();
@@ -676,7 +683,9 @@ app.get("/api/productPart", async (req, res) => {
 
 app.get("/api/productPart/:id", async (req, res) => {
   try {
-    const productPart = await ProductPart.findById(req.params.id).lean();
+    const productPart = await ProductPart.findById(req.params.id)
+    .populate({path:'compatibleWith', select:'itemName images'})
+    .lean();
     if (!productPart) {
       return res.status(404).json({ message: "Product part not found" });
     }
