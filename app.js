@@ -497,6 +497,7 @@ app.post("/api/productPart", upload.array("images", 5), async (req, res) => {
 
 //Update product part api
 app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
+  
   try {
     const partId = req.params.id;
     const { productId, partName, category, description, compatibleWith} = req.body;
@@ -521,7 +522,9 @@ app.put("/api/productPart/:id", upload.array("images", 5), async (req, res) => {
     productPart.productId = productId;
     productPart.partName = partName;
     productPart.category = category;
-    productPart.compatibleWith = compatibleWith ? compatibleWith : [];
+    productPart.compatibleWith = Array.isArray(compatibleWith)
+    ? compatibleWith.filter(id => id && id.trim() !== "")
+    : [];
     productPart.description = description;
     productPart.images = imageFilenames;
     productPart.updatedAt = Date.now();
